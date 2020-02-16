@@ -72,12 +72,19 @@ public function onNextDamage( DamageCallback callback )
     nextDamageCallbacks.add(callback)
 
 
-// public function unit.damageMagic(real amount, bool periodic)
+
+public function unit.damageMagic( unit target, real amount)
+    this.damageMagic(target, amount, false)
+   
+
 public function unit.damageMagic( unit target, real amount, bool periodic)
     DamageEvent.setNextDamageFromCode()
     periodicDamage = periodic
     this.damageTarget(target, amount, false, false, ATTACK_TYPE_MAGIC, DAMAGE_TYPE_UNIVERSAL, WEAPON_TYPE_WHOKNOWS )
     
+
+public function unit.damagePhysical( unit target, real amount)
+    this.damagePhysical(target, amount, false)
 
 public function unit.damagePhysical( unit target, real amount, bool periodic)
     DamageEvent.setNextDamageFromCode()
