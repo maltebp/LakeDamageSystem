@@ -1,0 +1,171 @@
+package LakeDamageSystem
+
+import DamageEvent
+import UtilCommands
+import initlater Main // TODO: Remove this
+import ClosureForGroups
+import LinkedList
+
+
+@configurable public let ARMOR_DAMAGE_REDUCTION_MULTIPLIER = 0.06
+
+// Ints rather than enums because DamageType is taken by DamageEvent package
+public let DAMAGE_TYPE_PHYSICAL    = 1
+public let DAMAGE_TYPE_MAGIC       = 2
+
+public let DAMAGE_STATE_NORMAL = new DamageState("Normal")
+
+var periodicDamage = false
+var damageData = new DamageData 
+var nextDamageCallbacks = new LinkedList<DamageCallback>
+
+
+public class DamageState
+    private string label
+    construct(string label)
+        this.label = label
+
+    function toString() returns string
+        return label
+
+public class DamageData
+    DamageState state = DAMAGE_STATE_NORMAL
+    unit source
+    unit target
+    real damage
+    bool basic
+    int damageType
+    bool periodic
+    
+
+
+public interface DamageCallback
+    function run(DamageData data)
+
+public interface DamageModifier
+    // Returns the modified damage
+    function run(DamageData data) returns real
+
+let inputModifiers = new LinkedList<DamageModifier>
+let outputModifiers = new LinkedList<DamageModifier>
+let rawDamageCallbacks = new LinkedList<DamageCallback>
+let finalDamageCallbacks = new LinkedList<DamageCallback>
+
+
+
+public function addDamageInputModfier( DamageModifier modifier )
+    inputModifiers.add(modifier)
+
+public function addDamageOutputModfier( DamageModifier modifier )
+    outputModifiers.add(modifier)
+
+public function onRawDamage( DamageCallback callback )
+    rawDamageCallbacks.add(callback)
+
+public function onFinalDamage( DamageCallback callback )
+    finalDamageCallbacks.add(callback)
+
+/** Add a callback to fire when next modified damage is dealt. This should only 
+    be used to detect the next code damage dealt (i.e. call
+    damageMagic or damagePhysical immediately after.) */
+public function onNextDamage( DamageCallback callback )
+    nextDamageCallbacks.add(callback)
+
+
+
+// public function unit.damageMagic(real amount, bool periodic)
+public function unit.damageMagic( unit target, real amount, bool periodic)
+    print( "Dealing {0} physical damage (code) to {1}".format(amount.toString(2), target.getName()) )
+    DamageEvent.setNextDamageFromCode()
+    periodicDamage = periodic
+    this.damageTarget(target, amount, false, false, ATTACK_TYPE_MAGIC, DAMAGE_TYPE_UNIVERSAL, WEAPON_TYPE_WHOKNOWS )
+    
+
+public function unit.damagePhysical( unit target, real amount, bool periodic)
+    print( "Dealing {0} physical damage (code) to {1}".format(amount.toString(2), target.getName()) )
+    DamageEvent.setNextDamageFromCode()
+    periodicDamage = periodic
+    this.damageTarget(target, amount, false, false, ATTACK_TYPE_NORMAL, DAMAGE_TYPE_NORMAL, WEAPON_TYPE_WHOKNOWS )
+
+
+
+
+init
+    DamageEvent.addUnreducedListener() -> 
+        damageData.source = DamageEvent.getSource()
+        damageData.target = DamageEvent.getTarget()
+        damageData.damage = DamageEvent.getAmount()
+        damageData.damageType = DamageEvent.getAttackType() == ATTACK_TYPE_MAGIC ? DAMAGE_TYPE_MAGIC : DAMAGE_TYPE_PHYSICAL
+        damageData.periodic = DamageEvent.getType() != DamageType.CODE and periodicDamage
+        damageData.basic = DamageEvent.getType() != DamageType.CODE
+        damageData.state = DAMAGE_STATE_NORMAL
+
+        print("\nRaw damage listeners: " + damageData.damage.toString(2).highlight())
+        for cb in rawDamageCallbacks
+            cb.run(damageData)
+
+        print("Damage output modifiers: " + damageData.damage.toString(2).highlight())
+        for cb in outputModifiers
+            damageData.damage = cb.run(damageData)
+
+        if( damageData.basic and damageData.damageType == DAMAGE_TYPE_MAGIC )
+            let armor = damageData.target.getArmor()
+            let dmgModifier = armor < 0 ?
+                2 - (1-ARMOR_DAMAGE_REDUCTION_MULTIPLIER).pow(-armor) :
+                1 - (armor * ARMOR_DAMAGE_REDUCTION_MULTIPLIER) / (1 + armor * ARMOR_DAMAGE_REDUCTION_MULTIPLIER)
+            
+            damageData.damage = damageData.damage / dmgModifier
+
+        DamageEvent.setAmount(damageData.damage)
+
+            
+
+    DamageEvent.addListener(0) ->
+
+        damageData.damage = DamageEvent.getAmount()
+        
+        print("Damage input modifiers: " + damageData.damage.toString(2).highlight())
+        for cb in inputModifiers
+            damageData.damage = cb.run(damageData)
+            
+        print("Damage absorption: " + damageData.damage.toString(2).highlight())
+        // TODO: Implement this
+        
+        print("Final damage listeners: " + damageData.damage.toString(2).highlight())
+        for cb in finalDamageCallbacks
+            cb.run(damageData)
+
+        if( nextDamageCallbacks.size() > 0 and damageData.basic )
+            /* Next damage should be done by calling damageMagic or damagePhysical. If
+                this triggered, it probably wasn't called or a basic attack was faster
+                (shouldn't happen).*/
+            Log.warn("LakeDamageSystem: Next damage was not code damage!")
+        
+        for cb in nextDamageCallbacks
+            cb.run(damageData)
+
+        DamageEvent.setAmount(damageData.damage)
+
+
+init
+    defineUtilCommand("dmg")
+    ..addArgument(ArgumentType.REAL)
+    ..addOptionSwitch("-m")
+    ..setAction() (p, args, opts) ->
+        let amount = args.getReal()
+        let magic = opts.getSwitch("-m")
+        forUnitsSelected(p) target ->
+            if(magic)
+                magicUnit.damageMagic(target, amount, false)
+            else
+                magicUnit.damagePhysical(target, amount, false)
+
+        
+
+    
+
+        
+
+
+    
+    
