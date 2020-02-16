@@ -72,7 +72,8 @@ public function onNextDamage( DamageCallback callback )
     nextDamageCallbacks.add(callback)
 
 
-
+/** Deal magic damage to target unit with this unit has source.
+    Magic damage bypasses armor. */
 public function unit.damageMagic( unit target, real amount)
     this.damageMagic(target, amount, false)
    
@@ -82,7 +83,8 @@ public function unit.damageMagic( unit target, real amount, bool periodic)
     periodicDamage = periodic
     this.damageTarget(target, amount, false, false, ATTACK_TYPE_MAGIC, DAMAGE_TYPE_UNIVERSAL, WEAPON_TYPE_WHOKNOWS )
     
-
+/** Deal physical damage to target unit with this unit has source.
+    Physical damage is reduced by armor. */
 public function unit.damagePhysical( unit target, real amount)
     this.damagePhysical(target, amount, false)
 
@@ -109,7 +111,7 @@ init
             damageData.state = DAMAGE_STATE_NORMAL
 
             let eventAttackType = DamageEvent.getAttackType()
-            if( eventAttackType != ATTACK_TYPE_MAGIC or eventAttackType != ATTACK_TYPE_MELEE )
+            if( eventAttackType != ATTACK_TYPE_MAGIC and eventAttackType != ATTACK_TYPE_MELEE )
                 Log.warn("LakeDamageSystem: {0} is not dealing correct attack type ({1}).".format(
                     damageData.source.getName(), eventAttackType.getHandleId().toString()))
             damageData.damageType = DamageEvent.getAttackType() == ATTACK_TYPE_MAGIC ? DAMAGE_TYPE_MAGIC : DAMAGE_TYPE_PHYSICAL
