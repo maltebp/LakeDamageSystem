@@ -4,7 +4,6 @@ import ObjectIdGenerator
 import UnitObjEditing
 import UnitIds
 import LinkedList
-import UtilCommands
 
 @configurable
 let DEFAULT_HP = 500.
@@ -36,7 +35,6 @@ public function createTestUnit(vec2 pos, real hp, real armor) returns unit
 public function unit.isTestUnit() returns boolean
     return UNIT_IDS.has(this.getTypeId())
     
-
 init
     UNIT_IDS.add(
         UNITID_FEMALE_1,
@@ -61,7 +59,6 @@ function defineUnit()
     ..setGenerics()
 
     
-    
 
 function UnitDefinition.setGenerics()
 
@@ -70,6 +67,7 @@ function UnitDefinition.setGenerics()
     ..setScaleProjectiles(false)
     ..setArmorType(ArmorType.Normal)
     ..setCanFlee(false)
+    ..setName("LDS Test Unit")
     ..setHideMinimapDisplay(true)
     ..setManaMaximum(0)
     ..setManaInitialAmount(0)
@@ -78,29 +76,3 @@ function UnitDefinition.setGenerics()
     ..setScalingValue(1.15)
     ..setHitPointsRegenerationRate(0)
     
-    
-//================================================================================================================================================================================================
-// Chat Command
-init
-    let cmd = defineUtilCommand("testunit")
-    ..addOptionInt("n", 1)
-    ..addOptionReal("hp", 500)
-    ..addOptionReal("armor", 0)
-    ..setAction() (p, args, opts) ->
-        let count = opts.getInt("n")
-        let health = opts.getReal("hp")
-        let armor = opts.getReal("armor")
-        if( health < 1 )
-            p.print("Health 'hp' must be larger than 0")   
-        else if( count < 1 )
-            p.print("Number of units 'n' must be larger than 0",8)
-        else
-            let spawnPos = p.getMousePos()
-            for i=1 to count
-                createTestUnit(spawnPos, health, armor)
-    
-    cmd.addHelpCommand("Spawns an enemy test unit at your mouse position")
-    ..setOptionDescription("n", "Number of units to spawn")
-    ..setOptionDescription("hp", "Health of the test units")
-    ..setOptionDescription("armor", "Armor of the test units")
-

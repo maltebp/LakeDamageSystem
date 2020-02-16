@@ -1,0 +1,100 @@
+package LDS_Testing
+
+import ObjectIdGenerator
+import UnitObjEditing
+import Assets
+import LDS_TestUnit
+import LakeDamageSystem
+import StandardTextTags
+import AbilityObjEditing
+import RegisterEvents
+
+//================================================================================================================================================================================================
+
+let LDS_DEBUG = true
+
+//================================================================================================================================================================================================
+
+let MAGIC_UNIT_ID = LDS_DEBUG ? compiletime(UNIT_ID_GEN.next()) : 0
+public unit magicUnit
+
+let PHYSICAL_UNIT_ID = LDS_DEBUG ? compiletime(UNIT_ID_GEN.next()) : 0
+public unit physicalUnit 
+
+
+
+//================================================================================================================================================================================================
+// On Next damage text
+let VAMPIRE_STRIKE = LDS_DEBUG ? compiletime(ABIL_ID_GEN.next()) : 0
+
+@compiletime
+function defineVampireStrike()
+    if( LDS_DEBUG )
+        new AbilityDefinitionFingerofDeath(VAMPIRE_STRIKE)
+        ..setName("Vampire Strike")
+        ..setTooltipNormal(1, "Vampire Strike")
+        ..setTooltipNormalExtended(1, "Deals 100 physical damage to an enemy, and heals you for the damage dealt")
+        ..setManaCost(1, 0)
+        ..setDamage(1, 0)
+        ..setArtTarget(Abilities.stampedeMissileDeath)
+        ..setLightningEffects("")
+
+init
+    registerSpellEffectEvent(VAMPIRE_STRIKE) ->
+        let caster = GetSpellAbilityUnit()
+
+        onNextDamage() (DamageData data) ->
+            caster.addHP(data.damage)
+            caster.addEffect(Abilities.vampiricAuraTarget, "chest")
+
+        caster.damagePhysical(GetSpellTargetUnit(), 100, false)
+        
+
+//================================================================================================================================================================================================
+// Damage text
+init
+    onFinalDamage() data ->
+        let tag = standardTextTag(data.target.getPos(), data.damage.toInt().toString() )
+        ..setColor(data.damageType == DAMAGE_TYPE_MAGIC ? colorA(175,220,255, 255) : colorA(255, 200, 175, 255))
+
+
+//================================================================================================================================================================================================
+// Create Test units
+
+init
+    if( LDS_DEBUG )
+        magicUnit = createUnit(Player(0), PHYSICAL_UNIT_ID, vec2(0,0), angle(0))
+        physicalUnit = createUnit(Player(0), MAGIC_UNIT_ID, vec2(0,0), angle(0))..addAbility(VAMPIRE_STRIKE)
+        createTestUnit(vec2(1000, 1000))
+        createTestUnit(vec2(1000, 1000))
+        createTestUnit(vec2(1000, 1000))
+        createTestUnit(vec2(1000, 1000))
+
+        
+    
+@compiletime
+function defineSourceUnit()
+    
+    if( LDS_DEBUG)
+        new UnitDefinition( MAGIC_UNIT_ID, UnitIds.priest )
+        ..setName("Magic Unit")
+        ..setNormalAbilities("")
+        ..setManaMaximum(10000)
+        ..setHitPointsMaximumBase(10000)
+        ..setAttack1DamageSidesperDie(1)
+        ..setAttack1DamageNumberofDice(1)
+
+        new UnitDefinition( PHYSICAL_UNIT_ID, UnitIds.priest )
+        ..setName("Physical")
+        ..setModelFile( Units.humanMage1 )
+        
+        ..setNormalAbilities("")
+        ..setManaMaximum(10000)
+        ..setHitPointsMaximumBase(10000)
+        ..setAttack1DamageSidesperDie(1)
+        ..setAttack1DamageNumberofDice(1)
+        ..setAttack1AttackType(AttackType.Normal)
+        ..setAttack1ProjectileArt(Abilities.sorceressMissile)
+        
+
+
