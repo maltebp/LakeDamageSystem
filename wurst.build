@@ -1,6 +1,13 @@
 ---
 projectName: LakeDamageSystem
+dependencies:
+- https://github.com/maltebp/ChatCommands
 buildMapData:
-  name: MyMapName
-  fileName: MyMapFile
-  author: malte
+  name: Lake Damage System (Testing map)
+  fileName: LakeDamageSystem
+  author: Lake
+  scenarioData:
+    loadingScreen:
+      title: Lake Damage System
+  optionsFlags:
+    hideMinimapPreview: true
