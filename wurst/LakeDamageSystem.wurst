@@ -96,11 +96,17 @@ init
         else
             damageData.source = DamageEvent.getSource()
             damageData.target = DamageEvent.getTarget()
-            damageData.damage = DamageEvent.getAmount()
-            damageData.damageType = DamageEvent.getAttackType() == ATTACK_TYPE_MAGIC ? DAMAGE_TYPE_MAGIC : DAMAGE_TYPE_PHYSICAL
+            damageData.damage = DamageEvent.getAmount()         
             damageData.periodic = DamageEvent.getType() != DamageType.CODE and periodicDamage
             damageData.basic = DamageEvent.getType() != DamageType.CODE
             damageData.state = DAMAGE_STATE_NORMAL
+
+            let eventAttackType = DamageEvent.getAttackType()
+            if( eventAttackType != ATTACK_TYPE_MAGIC or eventAttackType != ATTACK_TYPE_MELEE )
+                Log.warn("LakeDamageSystem: {0} is not dealing correct attack type ({1}).".format(
+                    damageData.source.getName(), eventAttackType.getHandleId().toString()))
+            damageData.damageType = DamageEvent.getAttackType() == ATTACK_TYPE_MAGIC ? DAMAGE_TYPE_MAGIC : DAMAGE_TYPE_PHYSICAL
+            
 
             if( debugText )
                 print("\n{0} damages {1}".format(damageData.source.getName(), damageData.target.getName()).highlight())
